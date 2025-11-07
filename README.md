@@ -2,19 +2,6 @@
 
 This project is a **simple template** for ESP32 that sends random temperature telemetry data to **ThingsBoard** IoT platform, simulated in **Wokwi**.
 
-## 📋 Description
-
-The project implements:
-- 📡 Automatic WiFi connection
-- 📊 Random temperature telemetry sending every 3 seconds
-- 🌐 MQTT communication with ThingsBoard
-- 📱 Complete simulation in Wokwi
-
-## 🔧 Hardware Used
-
-### Physical Components
-- **ESP32 DevKit C v4** - Main microcontroller only
-
 ## 📚 Dependencies and Libraries
 
 ### PlatformIO Libraries
@@ -57,12 +44,6 @@ constexpr uint16_t THINGSBOARD_PORT = 1883U;               // MQTT port
 # Clone the repository
 git clone <repository-url>
 cd esp32-thingsboard-platformio-wokwi-telemetry
-
-# Install dependencies
-pio lib install
-
-# Build the project
-pio run
 ```
 
 ### 3. ThingsBoard Configuration
@@ -83,71 +64,10 @@ pio run
 ### Automatic Telemetry (every 3s)
 - **temperature**: Random temperature values between 18.0°C and 35.0°C
 
-## 🏗️ Project Structure
-
-```
-esp32-thingsboard-platformio-wokwi-telemetry/
-├── src/
-│   └── main.cpp             # Main code
-├── include/
-│   └── README               # Custom headers
-├── lib/
-│   └── README               # Local libraries
-├── test/
-│   └── README               # Unit tests
-├── platformio.ini           # PlatformIO configuration
-├── wokwi.toml               # Wokwi configuration
-├── diagram.json             # Wokwi circuit diagram (ESP32 only)
-└── README.md                
-```
-
-## 🔍 Monitoring and Debug
-
-### Serial Monitor
-```bash
-pio device monitor --baud 115200
-```
-
-### Main Debug Messages
-- WiFi connection: `"WiFi connected!"`
-- ThingsBoard connection: `"Connected to ThingsBoard successfully!"`
-- Telemetry sending: `"Sending telemetry - Temperature: XX.X°C"`
-
-## 🎛️ Customization
-
-### Change Telemetry Interval
-```cpp
-constexpr uint32_t TELEMETRY_SEND_INTERVAL = 3000U;  // Change value in ms
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **WiFi connection fails**
-   - Verify SSID and password
-   - In Wokwi use "Wokwi-GUEST" without password
-
-2. **ThingsBoard connection fails**
-   - Verify device token in `main.cpp`
-   - Check network connectivity
-   - Review firewall on port 1883
-
-3. **Random temperature not generating**
-   - Check if `randomSeed(analogRead(0))` is called in setup()
-   - Verify telemetry sending interval
-
 ## 📄 License
 
 This project is an open source educational template. Free to use and modify.
 
-## 🤝 Contributions
-
-Contributions are welcome! Please:
-1. Fork the project
-2. Create a branch for your feature
-3. Commit your changes
-4. Open a Pull Request
 
 ## 📞 Support
 
