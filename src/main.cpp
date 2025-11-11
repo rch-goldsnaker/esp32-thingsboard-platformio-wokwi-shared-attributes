@@ -2,6 +2,7 @@
 #include <Arduino_MQTT_Client.h>
 #include <ThingsBoard.h>
 #include <Attribute_Request.h>
+#include <Shared_Attribute_Update.h>
 
 constexpr char WIFI_SSID[] = "Wokwi-GUEST";
 constexpr char WIFI_PASSWORD[] = "";
@@ -10,7 +11,6 @@ constexpr char THINGSBOARD_SERVER[] = "thingsboard.cloud";
 constexpr uint16_t THINGSBOARD_PORT = 1883U;
 
 #define LED_PIN 2
-#define BUTTON_PIN 0
 
 constexpr const char LED_STATE_ATTR[] = "ledState";
 constexpr size_t MAX_ATTRIBUTES = 3U;
@@ -19,14 +19,20 @@ constexpr uint64_t REQUEST_TIMEOUT_MICROSECONDS = 5000U * 1000U;
 WiFiClient wifiClient;
 Arduino_MQTT_Client mqttClient(wifiClient);
 Attribute_Request<1U, MAX_ATTRIBUTES> attr_request;
-const std::array<IAPI_Implementation *, 1U> apis = {&attr_request};
+Shared_Attribute_Update<1U, MAX_ATTRIBUTES> shared_update;
+
+const std::array<IAPI_Implementation *, 2U> apis = {
+    &attr_request,
+    &shared_update
+};
+
 ThingsBoard tb(mqttClient, 1024U, Default_Max_Stack_Size, apis);
 
 bool ledState = false;
 
-constexpr std::array<const char *, 1U> CLIENT_ATTRIBUTES_LIST = {LED_STATE_ATTR};
+constexpr std::array<const char *, 1U> SHARED_ATTRIBUTES_LIST = {LED_STATE_ATTR};
 
-void processClientAttributes(const JsonObjectConst &data)
+void processSharedAttributes(const JsonObjectConst &data)
 {
   bool attributeFound = false;
   for (auto it = data.begin(); it != data.end(); ++it)
@@ -35,7 +41,7 @@ void processClientAttributes(const JsonObjectConst &data)
     {
       ledState = it->value().as<bool>();
       digitalWrite(LED_PIN, ledState);
-      Serial.print("LED restored: ");
+      Serial.print("LED state updated from shared attributes: ");
       Serial.println(ledState ? "ON" : "OFF");
       attributeFound = true;
     }
@@ -43,7 +49,7 @@ void processClientAttributes(const JsonObjectConst &data)
 
   if (!attributeFound)
   {
-    Serial.println("LED value not found on server, using current state");
+    Serial.println("LED value not found in shared attributes, using current state");
   }
 }
 
@@ -52,7 +58,8 @@ void requestTimedOut()
   Serial.println("Timeout: No response from ThingsBoard within 5 seconds.");
 }
 
-const Attribute_Request_Callback<MAX_ATTRIBUTES> attribute_client_request_callback(&processClientAttributes, REQUEST_TIMEOUT_MICROSECONDS, &requestTimedOut, CLIENT_ATTRIBUTES_LIST);
+const Shared_Attribute_Callback<MAX_ATTRIBUTES> attributes_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());
+const Attribute_Request_Callback<MAX_ATTRIBUTES> attribute_shared_request_callback(&processSharedAttributes, REQUEST_TIMEOUT_MICROSECONDS, &requestTimedOut, SHARED_ATTRIBUTES_LIST);
 
 void InitWiFi() {
   Serial.println("Connecting to WiFi...");
@@ -75,20 +82,12 @@ const bool reconnect() {
   return true;
 }
 
-void toggleLed()
-{
-  ledState = !ledState;
-  digitalWrite(LED_PIN, ledState);
-  Serial.print("LED: ");
-  Serial.println(ledState ? "ON" : "OFF");
-  tb.sendAttributeData(LED_STATE_ATTR, ledState);
-}
+
 
 void setup()
 {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
   InitWiFi();
 }
 
@@ -113,17 +112,24 @@ void loop()
     }
     
     Serial.println("Connected to ThingsBoard successfully!");
-    attr_request.Client_Attributes_Request(attribute_client_request_callback);
+    
+    // Subscribe to shared attribute updates
+    if (!shared_update.Shared_Attributes_Subscribe(attributes_callback)) {
+      Serial.println("Failed to subscribe for shared attribute updates");
+      return;
+    }
+    
+    // Request current shared attributes
+    if (!attr_request.Shared_Attributes_Request(attribute_shared_request_callback)) {
+      Serial.println("Failed to request for shared attributes");
+      return;
+    }
+    
+    Serial.println("Subscribed to shared attributes");
   }
   
   // Process ThingsBoard messages
   tb.loop();
-
-  if (digitalRead(BUTTON_PIN) == LOW)
-  {
-    toggleLed();
-    delay(200); // Simple delay to avoid multiple triggers
-  }
 
   delay(200);
 }

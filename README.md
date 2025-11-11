@@ -1,14 +1,14 @@
-# ESP32 ThingsBoard Client Attributes
+# ESP32 ThingsBoard Shared Attributes
 
-This project demonstrates **Client Attributes** functionality with ESP32 and **ThingsBoard** IoT platform. The ESP32 controls an LED that maintains its state persistently using ThingsBoard client attributes, simulated in **Wokwi**.
+This project demonstrates **Shared Attributes** functionality with ESP32 and **ThingsBoard** IoT platform. The ESP32 controls an LED remotely using ThingsBoard shared attributes, allowing real-time control from the dashboard, simulated in **Wokwi**.
 
 ## 🎯 Features
 
-- **LED Control**: Toggle LED with physical button
-- **Persistent State**: LED state is saved as client attribute in ThingsBoard
-- **State Recovery**: LED state is restored on device restart
-- **Simple Design**: Minimal code, maximum functionality
-- **Wokwi Simulation**: Complete hardware simulation with LED and button
+- **Remote LED Control**: Control LED from ThingsBoard dashboard
+- **Real-time Updates**: Instant LED response to shared attribute changes
+- **Bidirectional Sync**: LED state synchronized between device and server
+- **Simple Design**: Minimal code, maximum IoT functionality
+- **Wokwi Simulation**: Complete hardware simulation with LED
 
 ## 📚 Dependencies and Libraries
 
@@ -24,7 +24,8 @@ lib_deps =
 ### System Libraries
 - `WiFi.h` - WiFi connectivity (ESP32)
 - `Arduino_MQTT_Client.h` - MQTT client for ThingsBoard
-- `Attribute_Request.h` - Client attributes management
+- `Attribute_Request.h` - Attribute request management
+- `Shared_Attribute_Update.h` - Shared attributes real-time updates
 
 ## ⚙️ Configuration
 
@@ -39,13 +40,12 @@ constexpr char WIFI_PASSWORD[] = "";             // Password (empty for Wokwi)
 constexpr char TOKEN[] = "xxxxxxxxxxxxxxxxxxxx";           // Device token (from ThingsBoard)
 constexpr char THINGSBOARD_SERVER[] = "thingsboard.cloud"; // ThingsBoard server
 constexpr uint16_t THINGSBOARD_PORT = 1883U;               // MQTT port
-constexpr const char LED_STATE_ATTR[] = "ledState";        // Client attribute name
+constexpr const char LED_STATE_ATTR[] = "ledState";        // Shared attribute name
 ```
 
 ### 3. Hardware Configuration
 ```cpp
 #define LED_PIN 2        // LED connected to GPIO 2
-#define BUTTON_PIN 0     // Button connected to GPIO 0
 ```
 
 ## 🚀 Installation and Usage
@@ -66,50 +66,50 @@ cd esp32-thingsboard-platformio-wokwi-telemetry
 1. Create a new device in ThingsBoard
 2. Copy the device **Access Token**
 3. Replace the `TOKEN` in `main.cpp`
-4. The device will automatically create the `ledState` client attribute
+4. Create a shared attribute `ledState` (boolean) in the device dashboard
 
 ### 4. Wokwi Simulation
 1. Open the project in Wokwi
 2. The `diagram.json` contains:
    - ESP32 DevKit C V4
    - Red LED on GPIO 2
-   - Blue button on GPIO 0
 3. Run the simulation
 4. Monitor serial port for connection status
+5. Control LED from ThingsBoard dashboard
 
 ## 🔧 How It Works
 
-### Client Attributes Flow
+### Shared Attributes Flow
 1. **Connection**: ESP32 connects to WiFi and ThingsBoard
-2. **Request**: Automatically requests `ledState` client attribute
-3. **Restore**: If attribute exists, LED state is restored
-4. **Control**: Press button to toggle LED state
-5. **Save**: New LED state is sent as client attribute to ThingsBoard
+2. **Subscribe**: Automatically subscribes to `ledState` shared attribute updates
+3. **Request**: Requests current `ledState` value from server
+4. **Real-time Control**: LED responds instantly to dashboard changes
+5. **Bidirectional Sync**: Device and server stay synchronized
 
 ### Hardware Components
-- **LED (GPIO 2)**: Visual indicator of current state
-- **Button (GPIO 0)**: Toggle control (with pull-up resistor)
+- **LED (GPIO 2)**: Visual indicator controlled remotely
 - **Serial Monitor**: Status messages and debugging
 
 ## 📊 ThingsBoard Integration
 
-### Client Attributes
-- **ledState** (boolean): Stores LED on/off state persistently
+### Shared Attributes
+- **ledState** (boolean): Controls LED state remotely from dashboard
 
 ### Device Behavior
-- **First Connection**: Uses default state (LED OFF)
-- **Subsequent Connections**: Restores last saved state
-- **Button Press**: Toggles LED and saves new state
-- **State Persistence**: Survives device restarts and reconnections
+- **First Connection**: Requests current shared attribute value
+- **Real-time Updates**: LED changes instantly when attribute is modified
+- **Dashboard Control**: Toggle LED from ThingsBoard web interface
+- **State Synchronization**: Device and server maintain consistent state
 
 ## 🎮 Usage
 
-1. **Power On**: Device connects and restores last LED state
-2. **Press Button**: Toggle LED between ON/OFF
-3. **Check ThingsBoard**: View `ledState` client attribute updates
-4. **Restart Device**: LED returns to last saved state
+1. **Power On**: Device connects and requests current LED state
+2. **Dashboard Control**: Go to ThingsBoard → Device → Attributes tab
+3. **Toggle LED**: Modify `ledState` shared attribute (true/false)
+4. **Real-time Response**: LED changes instantly on the device
+5. **Restart Device**: LED automatically syncs with server state
 
-## 📄 License
+## �📄 License
 
 This project is an open source educational template. Free to use and modify.
 
@@ -125,15 +125,16 @@ For questions or issues:
 
 ### Common Issues
 - **"Failed to connect to ThingsBoard"**: Check device token and internet connection
-- **"LED value not found on server"**: Normal for first-time connections
+- **"LED value not found in shared attributes"**: Create `ledState` shared attribute in dashboard
+- **"Failed to subscribe for shared attribute updates"**: Check MQTT connection
 - **"Timeout: No response from ThingsBoard"**: Network or server issues
 
 ### Serial Monitor Messages
-- `LED restored: ON/OFF` - State successfully recovered from ThingsBoard
-- `LED value not found on server` - Using default state (first connection)
-- `LED: ON/OFF` - Button pressed, new state sent to ThingsBoard
+- `LED state updated from shared attributes: ON/OFF` - Remote control successful
+- `Subscribed to shared attributes` - Ready to receive updates
+- `Connected to ThingsBoard successfully!` - Device online and ready
 
 ---
 **Author**: Mirutec - Roger Chung  
-**Version**: 1.0 - Client Attributes  
+**Version**: 1.0 - Shared Attributes  
 **Date**: November 2025
