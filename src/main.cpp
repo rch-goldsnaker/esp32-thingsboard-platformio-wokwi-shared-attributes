@@ -4,18 +4,24 @@
 #include <Attribute_Request.h>
 #include <Shared_Attribute_Update.h>
 
+// WiFi Configuration
 constexpr char WIFI_SSID[] = "Wokwi-GUEST";
 constexpr char WIFI_PASSWORD[] = "";
+
+// ThingsBoard Configuration
 constexpr char TOKEN[] = "qrXSMGvV47EJHBq4BkDm";
 constexpr char THINGSBOARD_SERVER[] = "thingsboard.cloud";
 constexpr uint16_t THINGSBOARD_PORT = 1883U;
 
+// Hardware Pins
 #define LED_PIN 2
 
+// ThingsBoard Attributes
 constexpr const char LED_STATE_ATTR[] = "ledState";
 constexpr size_t MAX_ATTRIBUTES = 3U;
 constexpr uint64_t REQUEST_TIMEOUT_MICROSECONDS = 5000U * 1000U;
 
+// Global Objects
 WiFiClient wifiClient;
 Arduino_MQTT_Client mqttClient(wifiClient);
 Attribute_Request<1U, MAX_ATTRIBUTES> attr_request;
@@ -32,18 +38,22 @@ bool ledState = false;
 
 constexpr std::array<const char *, 1U> SHARED_ATTRIBUTES_LIST = {LED_STATE_ATTR};
 
+// Process shared attributes received from ThingsBoard
 void processSharedAttributes(const JsonObjectConst &data)
 {
   bool attributeFound = false;
+  
   for (auto it = data.begin(); it != data.end(); ++it)
   {
     if (strcmp(it->key().c_str(), LED_STATE_ATTR) == 0)
     {
       ledState = it->value().as<bool>();
       digitalWrite(LED_PIN, ledState);
+      
       Serial.print("LED state updated from shared attributes: ");
       Serial.println(ledState ? "ON" : "OFF");
       attributeFound = true;
+      break;
     }
   }
 
@@ -58,13 +68,26 @@ void requestTimedOut()
   Serial.println("Timeout: No response from ThingsBoard within 5 seconds.");
 }
 
-const Shared_Attribute_Callback<MAX_ATTRIBUTES> attributes_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());
-const Attribute_Request_Callback<MAX_ATTRIBUTES> attribute_shared_request_callback(&processSharedAttributes, REQUEST_TIMEOUT_MICROSECONDS, &requestTimedOut, SHARED_ATTRIBUTES_LIST);
+const Shared_Attribute_Callback<MAX_ATTRIBUTES> attributes_callback(
+  &processSharedAttributes, 
+  SHARED_ATTRIBUTES_LIST.cbegin(), 
+  SHARED_ATTRIBUTES_LIST.cend()
+);
 
-void InitWiFi() {
+const Attribute_Request_Callback<MAX_ATTRIBUTES> attribute_shared_request_callback(
+  &processSharedAttributes, 
+  REQUEST_TIMEOUT_MICROSECONDS, 
+  &requestTimedOut, 
+  SHARED_ATTRIBUTES_LIST
+);
+
+void InitWiFi() 
+{
   Serial.println("Connecting to WiFi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
+  
+  while (WiFi.status() != WL_CONNECTED) 
+  {
     delay(500);
     Serial.print(".");
   }
@@ -73,21 +96,26 @@ void InitWiFi() {
   Serial.println(WiFi.localIP());
 }
 
-const bool reconnect() {
+const bool reconnect() 
+{
   const wl_status_t status = WiFi.status();
+  
   if (status == WL_CONNECTED) {
     return true;
   }
+  
   InitWiFi();
   return true;
 }
-
-
 
 void setup()
 {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
+  
+  digitalWrite(LED_PIN, LOW);
+  ledState = false;
+  
   InitWiFi();
 }
 
@@ -96,6 +124,7 @@ void loop()
   // Check WiFi connection
   if (!reconnect())
   {
+    delay(1000);
     return;
   }
 
@@ -108,6 +137,7 @@ void loop()
     if (!tb.connect(THINGSBOARD_SERVER, TOKEN, THINGSBOARD_PORT))
     {
       Serial.println("Failed to connect to ThingsBoard!");
+      delay(5000);
       return;
     }
     
